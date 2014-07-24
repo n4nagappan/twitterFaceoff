@@ -1,66 +1,125 @@
-//function TwitController($scope) { 
-//        $scope.twitData = [
-//      {handle:'handle1', followers:10, tweets: 99},
-//      {handle:'handle2', followers:30, tweets: 88}];       
-//}
-
-google.load("visualization", "1", {packages:["corechart"]});
-
-function addLinks(text,urls)
-{
-  for(var i=0; i<urls.length; ++i)
-  {
-    console.log(text);
-    console.log(urls[i].url);
-    text = text.replace( urls[i].url , '<a href="' + urls[i].url + '">' + urls[i].url + '</a>');
-    console.log(text);
-  }
-
-  return text;
-}
-function loadChart(handleData1, handleData2)
-{
-    var data = new google.visualization.DataTable();
-    data.addColumn('date' , 'Date');
-    data.addColumn('number' , handleData1.handle);
-    data.addColumn({type:'string', role:'tooltip','p': {'html': true}});
-    data.addColumn('number' , handleData2.handle);
-    data.addColumn({type:'string', role:'tooltip','p': {'html': true}});
-
-   
-    var len = Math.min(handleData1.length, handleData2.length);
-    for( i = 0; i< len ; ++i)
+TwitterVisualizer = {};
+TwitterVisualizer.loadChart = function(dataArr){
+    
+    var len = dataArr[0].length;
+    
+    var series = [];
+    var chartData = [];
+    var names = [];
+    var handles = [];
+    for(var i = 0 ; i< dataArr.length ; ++ i)
     {
-      var t1 = handleData1[i];
-      var t2 = handleData2[i];
-      var rt1 = Math.log(t1.retweet_count);
-      var rt2 = Math.log(t2.retweet_count);
-      var text1 = addLinks(t1.text, t1.entities.urls);
-      var text2 = addLinks(t2.text, t2.entities.urls);
-
-      data.addRow([new Date(t1.created_at),rt1,text1,null, null]);
-      data.addRow([new Date(t2.created_at),null,null,rt2, text2]);
+        chartData.push([]);
+        
+        names.push(dataArr[i][0].user.name);
+        handles.push(dataArr[i].handle);
+        
+        for(var j = 0 ; j< len ; ++ j)
+        {
+            var item = {};
+            item.x = new Date(dataArr[i][j].created_at);
+            item.y = dataArr[i][j].retweet_count;
+            item.text = dataArr[i][j].text;
+            chartData[i].push(item);
+        }
+    
+        // Highchart expect the data to be sorted
+        chartData[i].reverse();
+        series.push({name : dataArr[i].handle , data : chartData[i]});
     }
+    
+    
+    var chartObj = new Highcharts.Chart({
+    chart: {
+        renderTo: 'chart',
+        type: 'spline',
+        zoomType: 'x'
+    },
+    title: {
+        text: handles.join(' vs ')
+    },
+    subtitle: {
+        text: '(' + names.join(',')  + ')' 
+    },
+    xAxis: {
+        type: 'datetime',
+        dateTimeLabelFormats: { // don't display the dummy year
+            month: '%e. %b',
+            year: '%b'
+        },
+        title: {
+            text: 'Date'
+        }
+    },
+    yAxis: {
+        title: {
+            text: 'Retweets'
+        },
+        min: 0
+    },
+    tooltip: {
+        formatter: function(){
+            return this.point.text;
+        }
+    },
 
-    //var data = google.visualization.arrayToDataTable(chartData);
-
-    var options = {
-      title: 'Twitter FaceOff - '+ handleData1.handle + ' vs ' + handleData2.handle,
-      tooltip: {isHtml:true,trigger:'hover' },
-      interpolateNulls: true,
-    };
-
-    var chart = new google.visualization.LineChart(document.getElementById('chart'));
-    chart.draw(data, options);
+    series : series
+});    
+    
+    return chartObj;
 }
 
-var handle1 = "cristiano";
-var handle2 = "katyperry";
+var baseUrl = "http://livecat.cloudapp.net/timeline";
+var handles = ["imraina","imvkohli","msdhoni","bhogleharsha","sanjaymanjrekar","cricketaakash","virendersehwag"];
+var chartObj = {};
 
-$.getJSON("http://livecat.cloudapp.net/timeline?count=100&handle="+handle1,function(handleData1){  
-  $.getJSON("http://livecat.cloudapp.net/timeline?count=100&handle="+handle2,function(handleData2){
-    handleData1.handle = handle1;
-    handleData2.handle = handle2;
-    loadChart(handleData1, handleData2);
-  });
+
+function queue(funcs, finalCallback){
+    (function next(){
+        if(funcs.length > 0)
+        {
+            f = funcs.shift();
+            f(next);
+        }
+        else
+        {
+            finalCallback();
+        }
+    })();
+}
+
+
+
+var funcs = [];
+var dataArr = [];
+for( var i =0 ; i < handles.length ; ++i)
+{
+    var handle = handles[i];
+    var f = (function(handle){
+        return function(callback){
+         $.getJSON(baseUrl+"?count=30&handle="+handle+'&callback=?').success(function(data){
+            data.handle = handle;
+            dataArr.push(data);
+            callback();
+            });
+         }
+        })(handle);
+    
+    funcs.push(f); 
+}
+
+function final()
+{
+    chartObj = TwitterVisualizer.loadChart(dataArr);
+}
+
+queue(funcs,final);
+
+$(document).ready(function(){    
+    $(document).keyup(function(ev){
+        if(ev.keyCode ==  27)
+        {
+            chartObj.zoomOut();
+        }
+    });
 });
