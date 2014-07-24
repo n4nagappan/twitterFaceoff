@@ -70,50 +70,29 @@ TwitterVisualizer.loadChart = function(dataArr){
 }
 
 var baseUrl = "http://livecat.cloudapp.net/timeline";
-var handles = ["imraina","imvkohli","msdhoni","bhogleharsha","sanjaymanjrekar","cricketaakash","virendersehwag"];
+//var handles = ["imraina","imvkohli","msdhoni","bhogleharsha","sanjaymanjrekar","cricketaakash","virendersehwag","neymarjr"];
+var handles = ["Cristiano" , "kaka", "waynerooney","elonmusk"];
+
+
 var chartObj = {};
-
-
-function queue(funcs, finalCallback){
-    (function next(){
-        if(funcs.length > 0)
-        {
-            f = funcs.shift();
-            f(next);
-        }
-        else
-        {
-            finalCallback();
-        }
-    })();
-}
-
-
-
-var funcs = [];
-var dataArr = [];
-for( var i =0 ; i < handles.length ; ++i)
-{
-    var handle = handles[i];
-    var f = (function(handle){
-        return function(callback){
-         $.getJSON(baseUrl+"?count=30&handle="+handle+'&callback=?').success(function(data){
-            data.handle = handle;
-            dataArr.push(data);
-            callback();
-            });
-         }
-        })(handle);
-    
-    funcs.push(f); 
-}
-
 function final()
 {
     chartObj = TwitterVisualizer.loadChart(dataArr);
 }
 
-queue(funcs,final);
+var dataArr = [];
+for( var i =0 ; i < handles.length ; ++i)
+{
+    var handle = handles[i];
+    (function(handle){
+         $.getJSON(baseUrl+"?count=100&handle="+handle+'&callback=?').success(function(data){
+            data.handle = handle;
+            dataArr.push(data);
+            if(dataArr.length == handles.length)
+                final();
+         });
+    })(handle);
+}
 
 $(document).ready(function(){    
     $(document).keyup(function(ev){
