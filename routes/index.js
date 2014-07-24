@@ -4,9 +4,9 @@ var request = require('request');
 var config = require('./credentials.js');
 
 /* GET home page. */
-//router.get('/', function(req, res) {
-//  res.render('index', { title: 'Express' });
-//});
+router.get('/', function(req, res) {
+  res.sendfile('public/index.html');
+});
 
 var twitter = {};
 
@@ -75,7 +75,9 @@ twitter.fetch = function(handle, fetchCallback){
 
 /*index page*/
 router.get('/timeline', function(req,res){
+    console.log(req.query);
     var handle = req.query.handle;
+    var count = req.query.count || 20;
     req.db.collection('handles').findOne({'handle' : handle},function(err,result){
       if(err) throw err;
       console.log("Result : " + result);
@@ -83,14 +85,19 @@ router.get('/timeline', function(req,res){
       { 
         twitter.fetch(handle, function(data){
           req.db.collection('handles').insert({'handle':handle, 'data':data},function(){});
-          res.jsonp(data);
+          respond(data);
         });
       }
       else
       {
         console.log("Fetching from cache");
-        res.jsonp(result.data);
+        respond(result.data);
       }
+      
+      function respond(resultData){
+       res.jsonp(resultData.slice(0,count));
+      }
+
     });
 });
 module.exports = router;
