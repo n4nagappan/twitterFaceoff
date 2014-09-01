@@ -70,8 +70,8 @@ TwitterVisualizer.loadChart = function(dataArr){
 }
 
 var baseUrl = "http://livecat.cloudapp.net/timeline";
-//var handles = ["imraina","imvkohli","msdhoni","bhogleharsha","sanjaymanjrekar","cricketaakash","virendersehwag","neymarjr"];
-var handles = ["Cristiano" , "kaka", "waynerooney","elonmusk"];
+var handles = ["cristiano","theellenshow","katyperry"];
+//var handles = ["shanselman","Cristiano" , "kaka", "waynerooney","theRock", "elonmusk","msdhoni","imvkohli","imraina"];
 
 
 var chartObj = {};
@@ -85,7 +85,7 @@ for( var i =0 ; i < handles.length ; ++i)
 {
     var handle = handles[i];
     (function(handle){
-         $.getJSON(baseUrl+"?count=100&handle="+handle+'&callback=?').success(function(data){
+         $.getJSON("/timeline?count=100&handle="+handle+'&callback=?').success(function(data){
             data.handle = handle;
             dataArr.push(data);
             if(dataArr.length == handles.length)
