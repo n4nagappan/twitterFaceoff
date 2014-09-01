@@ -71,28 +71,34 @@ TwitterVisualizer.loadChart = function(dataArr){
 
 var baseUrl = "http://livecat.cloudapp.net/timeline";
 //var handles = ["imraina","imvkohli","msdhoni","bhogleharsha","sanjaymanjrekar","cricketaakash","virendersehwag","neymarjr"];
-var handles = ["Cristiano" , "kaka", "waynerooney","elonmusk"];
+var handles = ["Cristiano" ,"elonmusk","katyperry"];
 
 
-var chartObj = {};
-function final()
+var chartObj;
+function refreshChart()
 {
-    chartObj = TwitterVisualizer.loadChart(dataArr);
+    chartObj = {};
+    function final()
+    {
+        chartObj = TwitterVisualizer.loadChart(dataArr);
+    }
+
+    var dataArr = [];
+    for( var i =0 ; i < handles.length ; ++i)
+    {
+        var handle = handles[i];
+        (function(handle){
+             $.getJSON(baseUrl+"?count=100&handle="+handle+'&callback=?').success(function(data){
+                data.handle = handle;
+                dataArr.push(data);
+                if(dataArr.length == handles.length)
+                    final();
+             });
+        })(handle);
+    }
 }
 
-var dataArr = [];
-for( var i =0 ; i < handles.length ; ++i)
-{
-    var handle = handles[i];
-    (function(handle){
-         $.getJSON(baseUrl+"?count=100&handle="+handle+'&callback=?').success(function(data){
-            data.handle = handle;
-            dataArr.push(data);
-            if(dataArr.length == handles.length)
-                final();
-         });
-    })(handle);
-}
+refreshChart();
 
 $(document).ready(function(){    
     $(document).keyup(function(ev){
@@ -101,4 +107,12 @@ $(document).ready(function(){
             chartObj.zoomOut();
         }
     });
+    
+    $("#textbox").keypress(function(e) {
+    if(e.which == 13) {
+        handles.push($("#textbox").val());
+        refreshChart();
+    }
 });
+});
+
